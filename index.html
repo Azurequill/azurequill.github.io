@@ -1,0 +1,671 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>角色企划审核查询系统</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: url('bg.jpeg') center/cover fixed;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.3);
+            z-index: -1;
+        }
+
+        .container {
+            background: rgba(255, 255, 255, 0.98);
+            border-radius: 20px;
+            padding: 40px;
+            max-width: 600px;
+            width: 100%;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+            animation: slideIn 0.6s ease-out;
+            backdrop-filter: blur(10px);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-50px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        h1 {
+            color: #2d3748;
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 28px;
+            animation: fadeIn 1s ease-in;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .search-box {
+            position: relative;
+            margin-bottom: 30px;
+        }
+
+        input[type="text"] {
+            width: 100%;
+            padding: 15px 20px;
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            font-size: 16px;
+            transition: all 0.3s ease;
+            outline: none;
+        }
+
+        input[type="text"]:focus {
+            border-color: #4a5568;
+            box-shadow: 0 0 0 3px rgba(74, 85, 104, 0.1);
+            transform: translateY(-2px);
+        }
+
+        button {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(135deg, #2d3748 0%, #4a5568 100%);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 15px;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+            background: linear-gradient(135deg, #1a202c 0%, #2d3748 100%);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        .result {
+            margin-top: 30px;
+            padding: 25px;
+            border-radius: 12px;
+            animation: resultSlideIn 0.5s ease-out;
+            display: none;
+        }
+
+        @keyframes resultSlideIn {
+            from {
+                opacity: 0;
+                transform: translateX(-30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        .result.show {
+            display: block;
+        }
+
+        .result.approved {
+            background: transparent;
+            border: none;
+            padding: 0;
+        }
+
+        .result.rejected {
+            background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+            border-left: 5px solid #ef4444;
+        }
+
+        .result.pending {
+            background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%);
+            border-left: 5px solid #f59e0b;
+        }
+
+        .result.not-found {
+            background: linear-gradient(135deg, #e0e7ff 0%, #cffafe 100%);
+            border-left: 5px solid #6366f1;
+        }
+
+        .result h2 {
+            margin-bottom: 15px;
+            font-size: 22px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .icon {
+            font-size: 28px;
+            animation: bounce 0.6s ease-in-out;
+        }
+
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+
+        .character-name {
+            font-weight: 700;
+            color: #1e293b;
+            margin-bottom: 10px;
+            font-size: 20px;
+        }
+
+        .status {
+            font-weight: 600;
+            padding: 8px 15px;
+            border-radius: 20px;
+            display: inline-block;
+            margin: 10px 0;
+            font-size: 14px;
+        }
+
+        .status.approved {
+            background: #10b981;
+            color: white;
+        }
+
+        .status.rejected {
+            background: #ef4444;
+            color: white;
+        }
+
+        .status.pending {
+            background: #f59e0b;
+            color: white;
+        }
+
+        .reason {
+            margin-top: 15px;
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.7);
+            border-radius: 8px;
+            line-height: 1.6;
+        }
+
+        .reason-title {
+            font-weight: 600;
+            color: #dc2626;
+            margin-bottom: 8px;
+            font-size: 16px;
+        }
+
+        .reason-text {
+            color: #334155;
+        }
+
+        .particles {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: -1;
+        }
+
+        .particle {
+            position: absolute;
+            background: white;
+            border-radius: 50%;
+            opacity: 0.6;
+            animation: float 8s infinite ease-in-out;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0) translateX(0); }
+            25% { transform: translateY(-20px) translateX(10px); }
+            50% { transform: translateY(-40px) translateX(-10px); }
+            75% { transform: translateY(-20px) translateX(5px); }
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        .loading.show {
+            display: block;
+        }
+
+        .spinner {
+            border: 4px solid #f3f4f6;
+            border-top: 4px solid #4a5568;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .note {
+            margin-top: 15px;
+            padding: 12px;
+            background: rgba(74, 85, 104, 0.1);
+            border-radius: 8px;
+            font-size: 14px;
+            color: #2d3748;
+            line-height: 1.5;
+        }
+
+        .invitation-card {
+            margin-top: 25px;
+            padding: 20px;
+            background: linear-gradient(135deg, #ffd700 0%, #ffed4e 100%);
+            border-radius: 15px;
+            text-align: center;
+            animation: invitationAppear 0.8s ease-out;
+            box-shadow: 0 10px 30px rgba(255, 215, 0, 0.4);
+            border: 3px solid #ffa500;
+        }
+
+        @keyframes invitationAppear {
+            0% {
+                opacity: 0;
+                transform: scale(0.8) rotateY(180deg);
+            }
+            100% {
+                opacity: 1;
+                transform: scale(1) rotateY(0deg);
+            }
+        }
+
+        .invitation-title {
+            font-size: 24px;
+            font-weight: 700;
+            color: #8b4513;
+            margin-bottom: 15px;
+            text-shadow: 2px 2px 4px rgba(139, 69, 19, 0.2);
+            animation: shimmer 2s infinite;
+        }
+
+        @keyframes shimmer {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.8; }
+        }
+
+        .invitation-image {
+            max-width: 100%;
+            height: auto;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+            margin-top: 10px;
+            animation: imageFloat 3s ease-in-out infinite;
+        }
+
+        @keyframes imageFloat {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+        }
+
+        .invitation-message {
+            margin-top: 15px;
+            font-size: 16px;
+            color: #8b4513;
+            font-weight: 600;
+            line-height: 1.6;
+        }
+
+        .confetti {
+            position: fixed;
+            width: 10px;
+            height: 10px;
+            background: #ffd700;
+            position: absolute;
+            animation: confettiFall 3s linear;
+            opacity: 0;
+        }
+
+        @keyframes confettiFall {
+            0% {
+                opacity: 1;
+                transform: translateY(0) rotate(0deg);
+            }
+            100% {
+                opacity: 0;
+                transform: translateY(100vh) rotate(720deg);
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Background particles -->
+    <div class="particles" id="particles"></div>
+
+    <div class="container">
+        <h1>🎭 角色企划审核查询系统</h1>
+        
+        <div class="search-box">
+            <input type="text" id="characterName" placeholder="请输入角色名字..." autocomplete="off">
+            <button onclick="searchCharacter()">🔍 查询审核结果</button>
+        </div>
+
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <p style="margin-top: 10px; color: #4a5568;">正在查询中...</p>
+        </div>
+
+        <div class="result" id="result"></div>
+    </div>
+
+    <script>
+        // Character review data
+        const reviewData = [
+            {"name":"佩利多多","status":"过审","reason":""},
+            {"name":"Mia","status":"非过审","reason":"脸和身体有些割裂，比例有些奇怪，腿很怪"},
+            {"name":"黑邪灵","status":"过审","reason":"脸型稍微有一些奇怪"},
+            {"name":"灰痕","status":"过审","reason":""},
+            {"name":"格沃特•卡噶","status":"过审","reason":""},
+            {"name":"邦多尔•艾冗斯波","status":"过审","reason":""},
+            {"name":"深井氷","status":"过审","reason":""},
+            {"name":"塞芙拉","status":"过审","reason":""},
+            {"name":"达里奥 贝洛梅奥","status":"过审","reason":""},
+            {"name":"格温怀法•赛辛","status":"过审","reason":""},
+            {"name":"派珀缇涅 •贝利奈","status":"非过审","reason":"完成度比例问题，以及神态问题"},
+            {"name":"蒙斯扎里那","status":"过审","reason":""},
+            {"name":"克拉伦斯","status":"非过审","reason":"需要修改字体，脸部修改"},
+            {"name":"西比尔","status":"过审","reason":""},
+            {"name":"哈鲁玛拉","status":"非过审","reason":"完成度稍微有些低，建议文审/或者画更好"},
+            {"name":"维多利亚•瑞格","status":"非过审","reason":"没写清楚"},
+            {"name":"塞拉•那赫特","status":"过审","reason":"可能要修改一下数值"},
+            {"name":" 利多卡因","status":"过审","reason":""},
+            {"name":"【繁星】Starry","status":"过审","reason":"完成度"},
+            {"name":"黑尔达","status":"过审","reason":"字体改一下，房梁杂碎眼睛"},
+            {"name":"雪 阿希尔卡利斯","status":"过审","reason":""},
+            {"name":"亚历山德拉","status":"过审","reason":""},
+            {"name":"梅菲斯特 •罗德里斯特","status":"过审","reason":""},
+            {"name":"终曲","status":"过审","reason":""},
+            {"name":"菲尼克斯","status":"非过审","reason":"头发上色稍微有些脏，肤色上色"},
+            {"name":"梨花","status":"非过审","reason":"比例大问题，没到大腿根，数值问题"},
+            {"name":"露什卡.赫尔塔梅亚","status":"过审","reason":""},
+            {"name":"梅洛林•阿尔贝罗","status":"过审","reason":""},
+            {"name":"Sere","status":"过审","reason":""},
+            {"name":"奥伦","status":"过审","reason":""},
+            {"name":"安娜西娅","status":"过审","reason":""},
+            {"name":"维达","status":"需要做出决定","reason":""},
+            {"name":"西里尔斯","status":"需要做出决定","reason":""},
+            {"name":"黛丝","status":"过审","reason":""},
+            {"name":"聂米娅","status":"过审","reason":""},
+            {"name":"西里奥","status":"过审","reason":""},
+            {"name":"艾希拉赫","status":"过审","reason":""},
+            {"name":"斯塔露","status":"过审","reason":"七美德/七宗罪讲清楚"},
+            {"name":"罗纳尔","status":"过审","reason":""},
+            {"name":"特雷西 埃尔特林德","status":"过审","reason":""},
+            {"name":"斯帕乌斯克","status":"过审","reason":""},
+            {"name":"Alex Allen","status":"过审","reason":""},
+            {"name":"伪书=真赢","status":"过审","reason":""},
+            {"name":"弗洛里安.约万","status":"过审","reason":""},
+            {"name":"阿本德罗特","status":"过审","reason":""},
+            {"name":"格拉斯沃德","status":"过审","reason":""},
+            {"name":"落","status":"非过审","reason":"人体/色彩/材质问题"},
+            {"name":"夜神契","status":"过审","reason":""},
+            {"name":"夏禾","status":"过审","reason":""},
+            {"name":"芬尼亚斯特拉","status":"过审","reason":""},
+            {"name":"蓓","status":"过审","reason":""},
+            {"name":"格里泽希","status":"非过审","reason":"侧脸要改一下"},
+            {"name":"莫迪斯蒂 尼斯•墨勒泽尔","status":"过审","reason":""},
+            {"name":"艾斯利汀","status":"非过审","reason":"表述不清晰"},
+            {"name":"雷纳托","status":"非过审","reason":"颜色稍微有一些脏"},
+            {"name":"查理","status":"过审","reason":""},
+            {"name":"无名的幻身灵小姐","status":"过审","reason":""},
+            {"name":"泽维罗","status":"过审","reason":""},
+            {"name":"奥利弗","status":"非过审","reason":"完成度"},
+            {"name":"科佩什克莫里克","status":"过审","reason":""},
+            {"name":"卢里奇","status":"过审","reason":""},
+            {"name":"苏棠","status":"非过审","reason":"比例和色彩问题"},
+            {"name":"波伊德","status":"过审","reason":""},
+            {"name":"艾","status":"非过审","reason":"完成度不好"},
+            {"name":"斯莱尔","status":"过审","reason":""},
+            {"name":"牧云鸟","status":"过审","reason":""},
+            {"name":"伽厄","status":"过审","reason":"名字！！！"},
+            {"name":"莫秋","status":"过审","reason":""},
+            {"name":"拉米安","status":"过审","reason":""},
+            {"name":"莫尔塔","status":"过审","reason":""},
+            {"name":"梅克比斯","status":"过审","reason":""},
+            {"name":"墨尔菲洛","status":"非过审","reason":"细化很脏"},
+            {"name":"乌里塔","status":"过审","reason":""},
+            {"name":"斯莱","status":"过审","reason":""},
+            {"name":"角","status":"过审","reason":""},
+            {"name":"蒂尔米卡斯","status":"过审","reason":""},
+            {"name":"触手雇佣兵先生","status":"非过审","reason":"完成度不高"},
+            {"name":"埃妮克","status":"过审","reason":"错别字"},
+            {"name":"路修斯","status":"过审","reason":""},
+            {"name":"乌列凯尔","status":"过审","reason":""},
+            {"name":"艾瑞亚斯","status":"非过审","reason":"比例大问题，以及完成度"},
+            {"name":"安布罗斯","status":"过审","reason":""},
+            {"name":"弗洛里安","status":"过审","reason":""},
+            {"name":"索里亚","status":"过审","reason":""},
+            {"name":"艾尔","status":"非过审","reason":"二分有些凌乱"},
+            {"name":"赫","status":"过审","reason":""},
+            {"name":"杨","status":"过审","reason":""},
+            {"name":"哈帕斯&河塞斯","status":"过审","reason":"手写体改一下"},
+            {"name":"罗勒其斯","status":"过审","reason":""},
+            {"name":"菲兹莫斯","status":"过审","reason":"二分不清晰"},
+            {"name":"伊瑞尔","status":"非过审","reason":"完成度"},
+            {"name":"Edrien","status":"过审","reason":""},
+            {"name":"阿格尼丝","status":"非过审","reason":"脸型/头发上色/颜色脏/完成度，另外一只手握哪里去了"},
+            {"name":"莉莉娅","status":"过审","reason":""},
+            {"name":"兰朵","status":"非过审","reason":"胸太大，身体太短"},
+            {"name":"沃弗里","status":"过审","reason":""},
+            {"name":"杜诺","status":"过审","reason":""},
+            {"name":"mum","status":"过审","reason":"画质有些糊"},
+            {"name":"伊莲妮雅","status":"过审","reason":""},
+            {"name":"伊卡洛斯","status":"过审","reason":""},
+            {"name":"诺拉","status":"非过审","reason":"上色方式太脏了，手部比例"},
+            {"name":"罗兹","status":"非过审","reason":"种族请写清楚，请检查拼写"},
+            {"name":"东尼维尔","status":"过审","reason":""},
+            {"name":"本格拉斯","status":"过审","reason":""},
+            {"name":"诺提","status":"过审","reason":""},
+            {"name":"兽人裁缝师","status":"非过审","reason":""},
+            {"name":"内洛莉","status":"过审","reason":""},
+            {"name":"阿赛娅","status":"非过审","reason":"完成度"},
+            {"name":"安洛克沃德","status":"过审","reason":""},
+            {"name":"安翠欧","status":"过审","reason":""},
+            {"name":"欧希克","status":"非过审","reason":"完成度，比例以及上色还是脏"},
+            {"name":"涅珐","status":"过审","reason":""},
+            {"name":"维洛","status":"过审","reason":""},
+            {"name":"塞拉斯","status":"过审","reason":""},
+            {"name":"斯卡","status":"过审","reason":""},
+            {"name":"芙洛拉","status":"过审","reason":""}
+        ];
+
+        // Create floating particles
+        function createParticles() {
+            const particlesContainer = document.getElementById('particles');
+            for (let i = 0; i < 20; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'particle';
+                particle.style.width = Math.random() * 10 + 5 + 'px';
+                particle.style.height = particle.style.width;
+                particle.style.left = Math.random() * 100 + '%';
+                particle.style.top = Math.random() * 100 + '%';
+                particle.style.animationDelay = Math.random() * 8 + 's';
+                particle.style.animationDuration = Math.random() * 5 + 5 + 's';
+                particlesContainer.appendChild(particle);
+            }
+        }
+
+        // Search character
+        function searchCharacter() {
+            const input = document.getElementById('characterName');
+            const searchName = input.value.trim();
+            const resultDiv = document.getElementById('result');
+            const loading = document.getElementById('loading');
+
+            if (!searchName) {
+                alert('请输入角色名字！');
+                return;
+            }
+
+            // Show loading
+            loading.classList.add('show');
+            resultDiv.classList.remove('show');
+
+            // Simulate network delay for better UX
+            setTimeout(() => {
+                loading.classList.remove('show');
+                
+                // Find character (case-insensitive and trim spaces)
+                const character = reviewData.find(c => 
+                    c.name.trim().toLowerCase() === searchName.toLowerCase()
+                );
+
+                if (character) {
+                    displayResult(character);
+                } else {
+                    displayNotFound(searchName);
+                }
+            }, 500);
+        }
+
+        // Display result
+        function displayResult(character) {
+            const resultDiv = document.getElementById('result');
+            let statusClass, statusText, icon, noteText = '';
+
+            if (character.status === '过审') {
+                // Directly show invitation for approved characters
+                showInvitationOnly(character.name, character.reason);
+                createConfetti();
+                return;
+            } else if (character.status === '非过审') {
+                statusClass = 'rejected';
+                statusText = '未通过审核';
+                icon = '❌';
+            } else if (character.status === '需要做出决定') {
+                statusClass = 'pending';
+                statusText = '待决定';
+                icon = '⏳';
+            } else {
+                statusClass = 'pending';
+                statusText = character.status;
+                icon = '📋';
+            }
+
+            let reasonHTML = '';
+            if (character.status === '非过审' && character.reason) {
+                reasonHTML = `
+                    <div class="reason">
+                        <div class="reason-title">💡 未通过原因：</div>
+                        <div class="reason-text">${character.reason}</div>
+                    </div>
+                `;
+            }
+
+            resultDiv.className = `result ${statusClass} show`;
+            resultDiv.innerHTML = `
+                <h2><span class="icon">${icon}</span> 查询结果</h2>
+                <div class="character-name">角色名字：${character.name}</div>
+                <span class="status ${statusClass}">${statusText}</span>
+                ${reasonHTML}
+                ${noteText}
+            `;
+        }
+
+        // Show invitation only (for approved characters)
+        function showInvitationOnly(characterName, note) {
+            const resultDiv = document.getElementById('result');
+            const noteHTML = note ? `<div class="note">📝 备注：${note}</div>` : '';
+            
+            resultDiv.className = 'result approved show';
+            resultDiv.innerHTML = `
+                <div class="invitation-card">
+                    <div class="invitation-title">🎊 恭喜通过审核！🎊</div>
+                    <div class="invitation-message">
+                        亲爱的 <strong>${characterName}</strong>，<br>
+                        欢迎加入蔚蓝羽毛！
+                    </div>
+                    <img src="invitation.png" alt="邀请函" class="invitation-image">
+                </div>
+                ${noteHTML}
+            `;
+        }
+
+        // Create confetti animation
+        function createConfetti() {
+            const colors = ['#ffd700', '#ff6b6b', '#4ecdc4', '#45b7d1', '#f9ca24', '#ff6348'];
+            for (let i = 0; i < 50; i++) {
+                setTimeout(() => {
+                    const confetti = document.createElement('div');
+                    confetti.className = 'confetti';
+                    confetti.style.left = Math.random() * 100 + '%';
+                    confetti.style.background = colors[Math.floor(Math.random() * colors.length)];
+                    confetti.style.width = Math.random() * 10 + 5 + 'px';
+                    confetti.style.height = confetti.style.width;
+                    document.body.appendChild(confetti);
+                    
+                    setTimeout(() => {
+                        confetti.remove();
+                    }, 3000);
+                }, i * 30);
+            }
+        }
+
+        // Display not found
+        function displayNotFound(searchName) {
+            const resultDiv = document.getElementById('result');
+            resultDiv.className = 'result not-found show';
+            resultDiv.innerHTML = `
+                <h2><span class="icon">🔍</span> 查询结果</h2>
+                <div class="character-name">未找到角色：${searchName}</div>
+                <div class="reason">
+                    <div class="reason-text">
+                        请检查角色名字是否输入正确，或该角色尚未进行审核。<br>
+                        如有疑问，请联系管理员。
+                    </div>
+                </div>
+            `;
+        }
+
+        // Enter key to search
+        document.getElementById('characterName').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                searchCharacter();
+            }
+        });
+
+        // Initialize
+        createParticles();
+    </script>
+</body>
+</html>
