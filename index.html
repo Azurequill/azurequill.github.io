@@ -13,7 +13,7 @@
 
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: url('bg.jpeg') center/cover fixed;
+            background: url('bg.jpeg') center/cover no-repeat;
             min-height: 100vh;
             display: flex;
             justify-content: center;
@@ -32,6 +32,19 @@
             bottom: 0;
             background: rgba(0, 0, 0, 0.3);
             z-index: -1;
+        }
+
+        /* iOS Safari fix: avoid background-attachment: fixed issues */
+        @supports (-webkit-touch-callout: none) {
+            body {
+                background-attachment: scroll;
+                background-position: center center;
+                background-size: cover;
+            }
+
+            body::before {
+                position: absolute;
+            }
         }
 
         .container {
