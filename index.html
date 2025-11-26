@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AQ企划审核查询系统</title>
+    <title>角色企划审核查询系统</title>
     <style>
         * {
             margin: 0;
@@ -366,9 +366,66 @@
                 transform: translateY(100vh) rotate(720deg);
             }
         }
+
+        .music-control {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(135deg, #2d3748 0%, #4a5568 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.4);
+            transition: all 0.3s ease;
+            z-index: 1000;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .music-control:hover {
+            transform: scale(1.1);
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.5);
+        }
+
+        .music-control::before {
+            content: '🔊';
+            font-size: 28px;
+            animation: pulse 2s infinite;
+        }
+
+        .music-control.muted::before {
+            content: '🔇';
+            animation: none;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
     </style>
 </head>
 <body>
+    <!-- Background music -->
+    <audio id="bgMusic" loop>
+        <source src="bgmusic.mp3" type="audio/mpeg">
+    </audio>
+    
+    <!-- Pass music -->
+    <audio id="passMusic">
+        <source src="pass.mp3" type="audio/mpeg">
+    </audio>
+    
+    <!-- Reject sound effect -->
+    <audio id="rejectSound">
+        <source src="reject.mp3" type="audio/mpeg">
+    </audio>
+
+    <!-- Music control button -->
+    <div class="music-control" id="musicControl" onclick="toggleMusic()"></div>
+
     <!-- Background particles -->
     <div class="particles" id="particles"></div>
 
@@ -389,8 +446,108 @@
     </div>
 
     <script>
-        // Character review data
-        const reviewData = [
+        // Audio elements
+        const bgMusic = document.getElementById('bgMusic');
+        const passMusic = document.getElementById('passMusic');
+        const rejectSound = document.getElementById('rejectSound');
+        const musicControl = document.getElementById('musicControl');
+        let isMusicPlaying = false;
+        let isPassMusicPlaying = false;
+        let masterMuted = false;
+
+        // Set volume for all audio elements
+        function setMasterVolume(volume) {
+            bgMusic.volume = volume;
+            passMusic.volume = volume;
+            rejectSound.volume = volume;
+        }
+
+        // Handle pass music ending
+        passMusic.addEventListener('ended', function() {
+            isPassMusicPlaying = false;
+            if (isMusicPlaying && !masterMuted) {
+                bgMusic.play();
+            }
+        });
+
+        // Toggle master sound control
+        function toggleMusic() {
+            if (masterMuted) {
+                // Unmute all sounds
+                setMasterVolume(1);
+                masterMuted = false;
+                musicControl.classList.remove('muted');
+                
+                // Resume background music if it should be playing
+                if (isMusicPlaying && !isPassMusicPlaying) {
+                    bgMusic.play().catch(e => console.log('Audio play failed:', e));
+                }
+            } else {
+                // Mute all sounds
+                setMasterVolume(0);
+                masterMuted = true;
+                musicControl.classList.add('muted');
+            }
+        }
+
+        // Auto-play background music on first interaction
+        function startBgMusic() {
+            if (!isMusicPlaying) {
+                bgMusic.play().catch(e => {
+                    console.log('Auto-play prevented, user interaction required');
+                });
+                isMusicPlaying = true;
+            }
+        }
+
+        // Character review data loaded from CSV
+        let reviewData = [];
+
+        // Load and parse CSV file
+        function loadCsvData() {
+            fetch('企划审核统计.csv')
+                .then(response => response.text())
+                .then(text => {
+                    reviewData = parseCsvToData(text);
+                    console.log('CSV loaded, entries:', reviewData.length);
+                })
+                .catch(err => {
+                    console.error('Failed to load CSV:', err);
+                });
+        }
+
+        // Parse CSV content into [{ name, status, reason }]
+        function parseCsvToData(csvText) {
+            const lines = csvText.split(/\r?\n/).filter(l => l.trim() !== '');
+            const data = [];
+
+            // Skip header line (first line) if it contains "Column"
+            for (let i = 0; i < lines.length; i++) {
+                const line = lines[i];
+                if (i === 0 && line.includes('Column')) continue;
+
+                // Split by comma, but keep inner commas in reason (third column)
+                const parts = line.split(',');
+                if (parts.length < 3) continue;
+
+                const name = (parts[1] || '').trim();
+                const status = (parts[2] || '').trim();
+                const reason = parts.slice(3).join(',').trim();
+
+                if (!name) continue;
+
+                data.push({
+                    name,
+                    status: status || '',
+                    reason: reason || ''
+                });
+            }
+
+            return data;
+        }
+
+        // Character review data (fallback, will be overwritten by CSV if load succeeds)
+        reviewData = [
             {"name":"佩利多多","status":"过审","reason":""},
             {"name":"Mia","status":"非过审","reason":"脸和身体有些割裂，比例有些奇怪，腿很怪"},
             {"name":"黑邪灵","status":"过审","reason":"脸型稍微有一些奇怪"},
@@ -532,6 +689,19 @@
             const resultDiv = document.getElementById('result');
             const loading = document.getElementById('loading');
 
+            // Start background music on first search
+            startBgMusic();
+            
+            // Stop pass music and resume background music if pass music is playing
+            if (isPassMusicPlaying) {
+                passMusic.pause();
+                passMusic.currentTime = 0;
+                isPassMusicPlaying = false;
+                if (isMusicPlaying && !masterMuted) {
+                    bgMusic.play();
+                }
+            }
+
             if (!searchName) {
                 alert('请输入角色名字！');
                 return;
@@ -567,11 +737,21 @@
                 // Directly show invitation for approved characters
                 showInvitationOnly(character.name, character.reason);
                 createConfetti();
+                
+                // Play pass music and pause background music
+                bgMusic.pause();
+                passMusic.currentTime = 0;
+                passMusic.play().catch(e => console.log('Pass music play failed:', e));
+                isPassMusicPlaying = true;
+                
                 return;
             } else if (character.status === '非过审') {
                 statusClass = 'rejected';
                 statusText = '未通过审核';
                 icon = '❌';
+                // Play reject sound
+                rejectSound.currentTime = 0;
+                rejectSound.play().catch(e => console.log('Sound play failed:', e));
             } else if (character.status === '需要做出决定') {
                 statusClass = 'pending';
                 statusText = '待决定';
@@ -666,6 +846,27 @@
 
         // Initialize
         createParticles();
+        loadCsvData();
+        
+        // Auto-play background music on page load
+        window.addEventListener('load', function() {
+            bgMusic.play().then(() => {
+                isMusicPlaying = true;
+                musicControl.classList.remove('muted');
+            }).catch(e => {
+                console.log('Auto-play prevented by browser, waiting for user interaction');
+                // Try to play on any user interaction
+                document.body.addEventListener('click', function playOnClick() {
+                    if (!isMusicPlaying) {
+                        bgMusic.play().then(() => {
+                            isMusicPlaying = true;
+                            musicControl.classList.remove('muted');
+                        });
+                        document.body.removeEventListener('click', playOnClick);
+                    }
+                }, { once: true });
+            });
+        });
     </script>
 </body>
 </html>
